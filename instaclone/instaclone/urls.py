@@ -61,9 +61,12 @@ urlpatterns = [
     path('reject-request/<int:follow_id>/', views.reject_follow_request, name='reject_follow_request'), 
     
 
+    path('story/create/', views.create_story_view, name='create_story'),
+    path('story/<int:story_id>/', views.view_story, name='view_story'),
+
 ]
 
 
-# Serve media files during development
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

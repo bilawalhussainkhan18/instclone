@@ -28,6 +28,46 @@
     </div>
 </nav>
 
+<!-- Stories Section - Instagram Style -->
+<div class="max-w-2xl mx-auto px-4 py-4">
+    <div class="flex space-x-4 overflow-x-auto pb-4 hide-scrollbar">
+        <!-- Your Story (Add Button) -->
+        <div class="flex flex-col items-center">
+            <div class="relative">
+                <!-- Your Profile Picture -->
+                {% if request.user.profile_picture %}
+                    <img src="{{ request.user.profile_picture.url }}" class="w-16 h-16 rounded-full object-cover border-2 border-gray-400">
+                {% else %}
+                    <div class="w-16 h-16 rounded-full bg-gray-600 border-2 border-gray-400"></div>
+                {% endif %}
+                
+                <!-- Add Story Button (+) -->
+                <label for="story-file-input" class="absolute bottom-0 right-0 bg-blue-600 rounded-full p-1 cursor-pointer hover:bg-blue-700">
+                    <span class="text-white text-lg">+</span>
+                </label>
+                
+                <!-- Hidden File Input -->
+                <input type="file" id="story-file-input" accept="image/*,video/*" class="hidden" onchange="handleStoryUpload(this.files[0])">
+            </div>
+            <p class="text-xs mt-1 text-gray-400">Your story</p>
+        </div>
+        
+        <!-- Other Users Stories -->
+        {% for story_user in stories_users %}
+        <div class="flex flex-col items-center">
+            <a href="{% url 'view_story' story_user.latest_story_id %}" class="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 p-1 hover:scale-105 transition">
+                {% if story_user.profile_picture %}
+                    <img src="{{ story_user.profile_picture.url }}" class="w-full h-full rounded-full object-cover border-2 border-gray-900">
+                {% else %}
+                    <div class="w-full h-full rounded-full bg-gray-600 border-2 border-gray-900"></div>
+                {% endif %}
+            </a>
+            <p class="text-xs mt-1 text-gray-400 truncate" style="max-width: 64px;">{{ story_user.username }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
 <!-- Main Content -->
 <div class="max-w-2xl mx-auto mt-6 space-y-6 px-4" id="posts-container">
     {% if posts %}
@@ -137,6 +177,16 @@
     {% endif %}
 </div>
 
+<style>
+.hide-scrollbar {
+    -ms-overflow-style: none;  
+    scrollbar-width: none;  
+}
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;  
+}
+</style>
+
 <script>
 // CSRF Token for AJAX
 function getCookie(name) {
@@ -152,6 +202,37 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+// Handle story upload from home page
+function handleStoryUpload(file) {
+    if (!file) return;
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    // Send AJAX request
+    fetch('/story/create/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh page to show new story
+            window.location.reload();
+        } else {
+            alert('Error uploading story: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error uploading story');
+    });
 }
 
 // Like/Unlike Post

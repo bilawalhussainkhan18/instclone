@@ -5,10 +5,15 @@ from django.contrib import messages
 from django.db.models import Q
 
 from .models import Post, CustomUser, Comment, Like, Follow, CommentLike
-from .forms import CustomUserCreationForm, EditProfileForm, PostForm, CommentForm
+from .forms import CustomUserCreationForm, EditProfileForm, PostForm, CommentForm,StoryForm
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+
+from django.utils import timezone
+from django.db.models import Max, Count, Q
+from .models import Story
+
 
 def login_view(request):   #Handle user login authentication.
     if request.method == 'POST':
@@ -46,40 +51,39 @@ def logout_view(request):
 
 
 
-@login_required                        #  home feed with posts  followed user and users
+@login_required
 def home_view(request):
-    
+    # Get users that current user is following
     following_ids = Follow.objects.filter(
         follower=request.user, 
-        is_approved=True                           # Get users that current user is following
+        is_approved=True
     ).values_list("following_id", flat=True)
     
-    
+    # Get posts from followed users and own posts
     followed_posts = Post.objects.filter(
-        user_id__in=list(following_ids) + [request.user.id]    # Get posts from followed users and own posts
+        user_id__in=list(following_ids) + [request.user.id]
     ).order_by('-created_at')
     
-    
+    # If less than 5 posts, add random posts
     if followed_posts.count() < 5:
-        random_posts = Post.objects.exclude(                          # Get random posts from users not followed
+        random_posts = Post.objects.exclude(
             user_id__in=list(following_ids) + [request.user.id]
         ).order_by('?')[:10]
         
         all_posts = list(followed_posts) + list(random_posts)
-        
-
         all_posts.sort(key=lambda x: x.created_at, reverse=True)
         posts = all_posts
     else:
         posts = followed_posts
     
+    # Get likes data
     post_ids = [post.id for post in posts]
     user_likes = Like.objects.filter(
         user=request.user, 
         post_id__in=post_ids
     ).values_list('post_id', flat=True)
     
-    
+    # Get comment likes data
     comment_ids = []
     for post in posts:
         comment_ids.extend(post.comment_set.values_list('id', flat=True))
@@ -89,17 +93,28 @@ def home_view(request):
         comment_id__in=comment_ids
     ).values_list('comment_id', flat=True)
 
+    # Add is_liked property to posts and comments
     for post in posts:
-        post.is_liked = post.id in user_likes                         # Add is_liked property to each post and comment
-        
+        post.is_liked = post.id in user_likes
         for comment in post.comment_set.all():
             comment.is_liked = comment.id in user_comment_likes
+    
+    # Get users with active stories that current user follows
+    active_stories_users = CustomUser.objects.filter(
+        Q(id__in=following_ids) | Q(id=request.user.id),
+        story__isnull=False,
+        story__expires_at__gt=timezone.now()
+    ).distinct().annotate(
+        latest_story_id=Max('story__id'),
+        stories_count=Count('story', filter=Q(story__expires_at__gt=timezone.now()))
+    ).filter(stories_count__gt=0)
     
     comment_form = CommentForm()
     
     return render(request, 'core/home.html', {
         'posts': posts, 
-        'comment_form': comment_form
+        'comment_form': comment_form,
+        'stories_users': active_stories_users
     })
 
 
@@ -487,3 +502,63 @@ def post_detail_view(request, post_id):
         'post': post,
         'user_posts': user_posts
     })
+    
+    
+    
+@login_required
+def view_story(request, story_id):
+    story = get_object_or_404(Story, id=story_id)
+    
+                                                                           # Check if story is expired
+    if story.is_expired():
+        messages.error(request, "This story has expired")
+        return redirect('home')
+    
+    # Check if user can view this story
+
+    if story.user != request.user:
+        is_following = Follow.objects.filter(
+            follower=request.user,
+            following=story.user,
+            is_approved=True
+        ).exists()
+        
+        if not is_following and not story.user.is_private:
+            messages.error(request, "You cannot view this story")
+            return redirect('home')
+    
+    return render(request, 'core/view_story.html', {'story': story})
+
+
+@login_required
+def create_story_view(request):
+    if request.method == 'POST':
+        form = StoryForm(request.POST, request.FILES)
+        if form.is_valid():
+            story = form.save(commit=False)
+            story.user = request.user
+            story.save()
+            
+            # Return JSON response for AJAX
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Story added successfully!',
+                    'story_id': story.id
+                })
+            
+            messages.success(request, "Story added successfully!")
+            return redirect('home')
+        else:
+            # Return JSON error for AJAX
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': form.errors.as_text()
+                })
+            
+            messages.error(request, "Error adding story: " + form.errors.as_text())
+    else:
+        form = StoryForm()
+    
+    return render(request, 'core/create_story.html', {'form': form})

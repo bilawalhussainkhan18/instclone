@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser, Post, Comment
+from .models import CustomUser, Post, Comment  ,Story
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -52,13 +52,12 @@ class PostForm(forms.ModelForm):
         image = cleaned_data.get('image')
         video = cleaned_data.get('video')
         
-        # Check if both are empty
+        
         if not image and not video:
             raise forms.ValidationError("Either image or video is required.")
         
-        # Check if both are provided
+
         if image and video:
-            # Remove one of them based on which was provided first
             if 'image' in self.files:
                 cleaned_data['video'] = None
             else:
@@ -76,3 +75,56 @@ class CommentForm(forms.ModelForm):
                 'class': 'w-full rounded p-1 text-black'
             })
         }
+        
+        
+        
+class StoryForm(forms.ModelForm):
+    class Meta:
+        model = Story
+        fields = ['image', 'video', 'caption']
+        widgets = {
+            'caption': forms.Textarea(attrs={
+                'rows': 3, 
+                'placeholder': 'Add a caption to your story...',
+                'class': 'w-full p-2 bg-gray-700 rounded text-white'
+            })
+        }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        image = cleaned_data.get('image')
+        video = cleaned_data.get('video')
+        
+        if not image and not video:
+            raise forms.ValidationError("Either image or video is required.")
+        
+        if image and video:
+            raise forms.ValidationError("You can only upload either image or video, not both.")
+        
+        return cleaned_data
+    
+    
+class StoryForm(forms.ModelForm):
+    class Meta:
+        model = Story
+        fields = ['image', 'video', 'caption']
+        widgets = {
+            'caption': forms.Textarea(attrs={
+                'rows': 3, 
+                'placeholder': 'Add a caption to your story...',
+                'class': 'w-full p-2 bg-gray-700 rounded text-white'
+            })
+        }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        image = cleaned_data.get('image')
+        video = cleaned_data.get('video')
+        
+        if not image and not video:
+            raise forms.ValidationError("Either image or video is required.")
+        
+        if image and video:
+            raise forms.ValidationError("You can only upload either image or video, not both.")
+        
+        return cleaned_data

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ story.user.username }}'s Story - Instaclone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center">
+
+<div class="relative w-full max-w-md mx-4">
+    <!-- Story Media -->
+    <div class="rounded-lg overflow-hidden shadow-2xl">
+        {% if story.image %}
+            <img src="{{ story.image.url }}" alt="Story" 
+                 class="w-full h-96 object-cover cursor-pointer" 
+                 onclick="handleTap()">
+        {% elif story.video %}
+            <video controls autoplay class="w-full h-96 object-cover">
+                <source src="{{ story.video.url }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        {% else %}
+            <div class="w-full h-96 bg-gray-800 flex items-center justify-center">
+                <span class="text-gray-400">No media available</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- User Info -->
+    <div class="absolute top-4 left-4 flex items-center space-x-3">
+        {% if story.user.profile_picture %}
+            <img src="{{ story.user.profile_picture.url }}" 
+                 class="w-10 h-10 rounded-full object-cover border-2 border-white">
+        {% else %}
+            <div class="w-10 h-10 rounded-full bg-gray-600 border-2 border-white"></div>
+        {% endif %}
+        <div>
+            <p class="font-bold text-white drop-shadow-md">{{ story.user.username }}</p>
+            <p class="text-xs text-gray-300">{{ story.created_at|timesince }} ago</p>
+        </div>
+    </div>
+
+    <!-- Caption -->
+    {% if story.caption %}
+    <div class="absolute bottom-16 left-4 right-4 bg-black bg-opacity-50 p-3 rounded">
+        <p class="text-white text-sm">{{ story.caption }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Navigation Arrows -->
+    <div class="absolute inset-y-0 left-0 flex items-center">
+        <button class="bg-black bg-opacity-30 text-white p-2 rounded-r hover:bg-opacity-50 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+    </div>
+    
+    <div class="absolute inset-y-0 right-0 flex items-center">
+        <button class="bg-black bg-opacity-30 text-white p-2 rounded-l hover:bg-opacity-50 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Close Button -->
+    <div class="absolute top-4 right-4">
+        <a href="{% url 'home' %}" 
+           class="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </a>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="absolute top-0 left-0 right-0 h-1 bg-gray-600">
+        <div class="h-full bg-white transition-all duration-10000 linear" id="progress-bar"></div>
+    </div>
+</div>
+
+<script>
+// Auto progress bar
+function startProgressBar() {
+    const progressBar = document.getElementById('progress-bar');
+    progressBar.style.width = '0%';
+    
+    setTimeout(() => {
+        progressBar.style.width = '100%';
+    }, 100);
+    
+    // Redirect after 10 seconds
+    setTimeout(() => {
+        window.location.href = "{% url 'home' %}";
+    }, 10000);
+}
+
+// Handle screen taps for navigation
+function handleTap() {
+    // You can implement next/previous story navigation here
+    console.log('Screen tapped - implement navigation logic');
+}
+
+// Start progress bar when page loads
+document.addEventListener('DOMContentLoaded', startProgressBar);
+</script>
+
+</body>
+</html>

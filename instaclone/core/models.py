@@ -2,7 +2,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
-
+from django.utils import timezone
 
 class CustomUser(AbstractUser):  #Custom User model extending Django's AbstractUser.
     name = models.CharField(max_length=150, blank=True, null=True)
@@ -154,3 +154,21 @@ class Follow(models.Model):          #Follow model to manage user follow relatio
         status = "approved" if self.is_approved else "pending"
         return f"{self.follower.username} follows {self.following.username} ({status})"
     
+class Story(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='stories/%Y/%m/%d/', blank=True, null=True)
+    video = models.FileField(upload_to='stories/videos/%Y/%m/%d/', blank=True, null=True)
+    caption = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(hours=24)
+        super().save(*args, **kwargs)
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"{self.user.username}'s Story"
