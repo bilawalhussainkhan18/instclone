@@ -1,10 +1,10 @@
 # Instagram Clone (Django)
 
-This project is a Django-based Instagram Clone developed as part of my internship task at Lahore Signal Company. It simulates core social media features such as user authentication, posting images, and viewing feeds.
+This project is a Django-based Instagram Clone developed as part of my internship task at Lahore Sygnls Company. It simulates core social media features such as user authentication, posting images, and viewing feeds.
 
 ## Internship Information
-- Internship Company: Lahore Signal Company
-- Assigned by: Boss Ali Butt
+- Internship Company: Lahore Sygnls Company
+- Assigned by: Sir Ali Butt
 - Task: Develop a social media web application using Django
 - Purpose: To demonstrate backend and full-stack development skills
 
